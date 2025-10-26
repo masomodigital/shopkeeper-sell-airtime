@@ -201,11 +201,11 @@
             creditsElement.textContent = newCredits >= 0 ? newCredits : 0;
           }
 
-          // Clear inputs
+          // Clear inputs after success
           document.getElementById("customerNumber").value = "";
           document.getElementById("airtimeAmount").value = "";
 
-          // Hide message after 4 seconds
+          // Auto-hide message after 4 seconds
           setTimeout(() => {
             msg.style.opacity = "0";
             setTimeout(() => { msg.textContent = ""; msg.style.opacity = "1"; }, 400);
