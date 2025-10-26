@@ -104,17 +104,12 @@
       msg.className = "message";
 
       try {
-        const res = await fetch(WORKER_URL, {
+        const response = await fetch(WORKER_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apiKey: "MASOMO2025",
-            action: "loginShopkeeper",
-            nationalId: id,
-            password: password
-          })
+          body: JSON.stringify({ action: "login", nationalId: id, password })
         });
-        const result = await res.json();
+        const result = await response.json();
 
         if (result.status === "success") {
           currentShopkeeper = result.data;
@@ -130,8 +125,8 @@
           msg.className = "message error";
         }
       } catch (err) {
-        console.error("Login error:", err);
-        msg.textContent = "Failed to connect to server.";
+        console.error(err);
+        msg.textContent = "Failed to contact server.";
         msg.className = "message error";
       }
     }
@@ -141,7 +136,6 @@
       const amount = Number(document.getElementById("airtimeAmount").value);
       const msg = document.getElementById("sellMsg");
       const btn = document.getElementById("sellBtn");
-
       msg.textContent = "";
       msg.className = "message";
 
@@ -167,32 +161,32 @@
       msg.textContent = "Processing, please wait...";
       msg.className = "message";
 
+      const saleData = {
+        action: "sellAirtime",
+        nationalId: currentShopkeeper.nationalID,
+        customerPhone: customer,
+        amount: amount
+      };
+
       try {
-        const res = await fetch(WORKER_URL, {
+        const response = await fetch(WORKER_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apiKey: "MASOMO2025",
-            action: "sellAirtime",
-            nationalId: currentShopkeeper.nationalID,
-            customerPhone: customer,
-            amount: amount
-          })
+          body: JSON.stringify(saleData)
         });
-
-        const response = await res.json();
+        const result = await response.json();
 
         btn.disabled = false;
         btn.style.opacity = "1";
         btn.textContent = "Sell Airtime";
 
-        if (response && response.status === "success") {
-          msg.textContent = response.message;
+        if (result && result.status === "success") {
+          msg.textContent = result.message;
           msg.className = "message success";
 
-          if (response.newFloat !== undefined && !isNaN(response.newFloat)) {
-            document.getElementById("shopFloat").textContent = Number(response.newFloat).toFixed(2);
-            currentShopkeeper.float = Number(response.newFloat);
+          if (result.newFloat !== undefined && !isNaN(result.newFloat)) {
+            document.getElementById("shopFloat").textContent = Number(result.newFloat).toFixed(2);
+            currentShopkeeper.float = Number(result.newFloat);
           }
 
           const creditsElement = document.getElementById("shopCredits");
@@ -201,24 +195,23 @@
             creditsElement.textContent = newCredits >= 0 ? newCredits : 0;
           }
 
-          // Clear inputs after success
           document.getElementById("customerNumber").value = "";
           document.getElementById("airtimeAmount").value = "";
 
-          // Auto-hide message after 4 seconds
           setTimeout(() => {
             msg.style.opacity = "0";
             setTimeout(() => { msg.textContent = ""; msg.style.opacity = "1"; }, 400);
           }, 4000);
+
         } else {
-          msg.textContent = (response && response.message) ? response.message : "Failed to sell airtime.";
+          msg.textContent = (result && result.message) ? result.message : "Failed to sell airtime.";
           msg.className = "message error";
         }
       } catch (err) {
-        console.error("Sell airtime error:", err);
         btn.disabled = false;
         btn.style.opacity = "1";
         btn.textContent = "Sell Airtime";
+        console.error(err);
         msg.textContent = "An error occurred while contacting the server.";
         msg.className = "message error";
       }
