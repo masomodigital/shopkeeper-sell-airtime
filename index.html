@@ -2,57 +2,235 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Sell Airtime to Customer</title>
+  <title>Masomo Airtime - Sell Airtime</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f3f4f6;
-      margin: 0;
-      padding: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f2f4f7;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      color: #333;
+      min-height: 100vh;
+      margin: 0;
     }
     .container {
       background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 30px;
-      width: 90%;
-      max-width: 500px;
-      text-align: center;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 95%;
+      max-width: 400px;
     }
     h2 {
-      color: #2563eb;
+      text-align: center;
+      color: #007b55;
       margin-bottom: 20px;
     }
-    p {
-      font-size: 16px;
-      margin-bottom: 15px;
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      box-sizing: border-box;
     }
     button {
-      padding: 12px 20px;
-      font-size: 16px;
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
+      background: #007b55;
+      color: white;
+      font-weight: 600;
       cursor: pointer;
-      margin-top: 10px;
+      transition: 0.3s;
     }
-    button:hover {
-      background: #1e40af;
+    button:hover { background: #009e6f; }
+    #dashboard { display: none; }
+    .info-box {
+      background: #f9f9f9;
+      border-left: 4px solid #007b55;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      font-size: 14px;
     }
+    .message { text-align: center; font-weight: 600; margin-top: 10px; transition: opacity 0.4s ease; }
+    .success { color: green; }
+    .error { color: red; font-weight: 700; }
+    .logout-btn { background: #cc0000; }
+    .logout-btn:hover { background: #ff0000; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Sell Airtime to Customer</h2>
-    <p>Welcome! This page is under construction. You can update it with your airtime selling interface here.</p>
-    <button onclick="alert('Feature coming soon!')">Start Selling Airtime</button>
+    <h2>Masomo Airtime</h2>
+
+    <!-- LOGIN SECTION -->
+    <div id="loginSection">
+      <h3>Shopkeeper Login</h3>
+      <input type="text" id="loginID" placeholder="Enter National ID">
+      <input type="password" id="loginPassword" placeholder="Enter Password">
+      <button onclick="loginShopkeeper()">Login</button>
+      <p id="loginMsg" class="message"></p>
+    </div>
+
+    <!-- DASHBOARD SECTION -->
+    <div id="dashboard">
+      <div class="info-box">
+        <p><strong>Name:</strong> <span id="shopName"></span></p>
+        <p><strong>ID:</strong> <span id="shopID"></span></p>
+        <p><strong>Float Balance:</strong> Ksh <span id="shopFloat"></span></p>
+        <p><strong>SMS Credits:</strong> <span id="shopCredits"></span></p>
+      </div>
+
+      <h3>Sell Airtime</h3>
+      <input type="text" id="customerNumber" placeholder="Customer Phone (07...)">
+      <input type="number" id="airtimeAmount" placeholder="Amount (Ksh)">
+      <button id="sellBtn" onclick="sellAirtime()">Sell Airtime</button>
+      <p id="sellMsg" class="message"></p>
+
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
   </div>
+
+  <script>
+    const WORKER_URL = "https://yellow-fire-fca7.ev-dmaundu.workers.dev/";
+    let currentShopkeeper = null;
+
+    async function loginShopkeeper() {
+      const id = document.getElementById("loginID").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      const msg = document.getElementById("loginMsg");
+      msg.textContent = "Please wait...";
+      msg.className = "message";
+
+      try {
+        const res = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apiKey: "MASOMO2025",
+            action: "loginShopkeeper",
+            nationalId: id,
+            password: password
+          })
+        });
+        const result = await res.json();
+
+        if (result.status === "success") {
+          currentShopkeeper = result.data;
+          document.getElementById("loginSection").style.display = "none";
+          document.getElementById("dashboard").style.display = "block";
+          document.getElementById("shopName").textContent = result.data.name;
+          document.getElementById("shopID").textContent = result.data.nationalID;
+          document.getElementById("shopFloat").textContent = Number(result.data.float).toFixed(2);
+          document.getElementById("shopCredits").textContent = result.data.credits;
+          msg.textContent = "";
+        } else {
+          msg.textContent = result.message;
+          msg.className = "message error";
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        msg.textContent = "Failed to connect to server.";
+        msg.className = "message error";
+      }
+    }
+
+    async function sellAirtime() {
+      const customer = document.getElementById("customerNumber").value.trim();
+      const amount = Number(document.getElementById("airtimeAmount").value);
+      const msg = document.getElementById("sellMsg");
+      const btn = document.getElementById("sellBtn");
+
+      msg.textContent = "";
+      msg.className = "message";
+
+      if (!customer.startsWith("07") || customer.length !== 10) {
+        msg.textContent = "Invalid phone number format.";
+        msg.className = "message error";
+        return;
+      }
+      if (isNaN(amount) || amount < 5) {
+        msg.textContent = "Minimum airtime is Ksh 5.";
+        msg.className = "message error";
+        return;
+      }
+      if (!currentShopkeeper || !currentShopkeeper.nationalID) {
+        msg.textContent = "Login session missing. Please login again.";
+        msg.className = "message error";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.style.opacity = "0.6";
+      btn.textContent = "Processing...";
+      msg.textContent = "Processing, please wait...";
+      msg.className = "message";
+
+      try {
+        const res = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apiKey: "MASOMO2025",
+            action: "sellAirtime",
+            nationalId: currentShopkeeper.nationalID,
+            customerPhone: customer,
+            amount: amount
+          })
+        });
+
+        const response = await res.json();
+
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.textContent = "Sell Airtime";
+
+        if (response && response.status === "success") {
+          msg.textContent = response.message;
+          msg.className = "message success";
+
+          if (response.newFloat !== undefined && !isNaN(response.newFloat)) {
+            document.getElementById("shopFloat").textContent = Number(response.newFloat).toFixed(2);
+            currentShopkeeper.float = Number(response.newFloat);
+          }
+
+          const creditsElement = document.getElementById("shopCredits");
+          if (creditsElement) {
+            const newCredits = Number(creditsElement.textContent) - 1;
+            creditsElement.textContent = newCredits >= 0 ? newCredits : 0;
+          }
+
+          // Clear inputs
+          document.getElementById("customerNumber").value = "";
+          document.getElementById("airtimeAmount").value = "";
+
+          // Hide message after 4 seconds
+          setTimeout(() => {
+            msg.style.opacity = "0";
+            setTimeout(() => { msg.textContent = ""; msg.style.opacity = "1"; }, 400);
+          }, 4000);
+        } else {
+          msg.textContent = (response && response.message) ? response.message : "Failed to sell airtime.";
+          msg.className = "message error";
+        }
+      } catch (err) {
+        console.error("Sell airtime error:", err);
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.textContent = "Sell Airtime";
+        msg.textContent = "An error occurred while contacting the server.";
+        msg.className = "message error";
+      }
+    }
+
+    function logout() {
+      currentShopkeeper = null;
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("loginSection").style.display = "block";
+      document.getElementById("loginMsg").textContent = "";
+      document.getElementById("loginPassword").value = "";
+    }
+  </script>
 </body>
 </html>
