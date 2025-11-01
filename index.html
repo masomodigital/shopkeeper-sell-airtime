@@ -143,7 +143,7 @@
           msg.textContent = "";
 
           // 🧩 NEW: Check for low credits
-          if (Number(result.data.credits) < 1) {
+          if (Number(result.data.credits) < 2) {
             document.getElementById("creditWarning").style.display = "block";
             document.getElementById("creditWarning").textContent =
               "You should have at least 1 SMS credit to sell airtime. Kindly buy SMS credits.";
