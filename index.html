@@ -58,6 +58,21 @@
     .error { color: red; font-weight: 700; }
     .logout-btn { background: #cc0000; }
     .logout-btn:hover { background: #ff0000; }
+
+    /* new button styling for Buy Credits */
+    .buy-credits-btn {
+      background: #009e6f;
+      color: white;
+      font-weight: 600;
+      margin-top: 10px;
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 8px;
+      padding: 10px;
+      transition: 0.3s;
+    }
+    .buy-credits-btn:hover { background: #00b87d; }
   </style>
 </head>
 <body>
@@ -82,11 +97,17 @@
         <p><strong>SMS Credits:</strong> <span id="shopCredits"></span></p>
       </div>
 
-      <h3>Sell Airtime</h3>
-      <input type="text" id="customerNumber" placeholder="Customer Phone (07...)" maxlength="10">
-      <input type="number" id="airtimeAmount" placeholder="Amount (Ksh)">
-      <button id="sellBtn" onclick="sellAirtime()">Sell Airtime</button>
-      <p id="sellMsg" class="message"></p>
+      <!-- CREDIT WARNING AREA -->
+      <p id="creditWarning" class="message error" style="display:none;"></p>
+      <a id="buyCreditsBtn" href="https://masomodigital.github.io/BUY-CREDITS-PAGE/" target="_blank" class="buy-credits-btn" style="display:none;">Buy SMS Credits</a>
+
+      <div id="sellSection">
+        <h3>Sell Airtime</h3>
+        <input type="text" id="customerNumber" placeholder="Customer Phone (07...)" maxlength="10">
+        <input type="number" id="airtimeAmount" placeholder="Amount (Ksh)">
+        <button id="sellBtn" onclick="sellAirtime()">Sell Airtime</button>
+        <p id="sellMsg" class="message"></p>
+      </div>
 
       <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
@@ -120,6 +141,20 @@
           document.getElementById("shopFloat").textContent = Number(result.data.float).toFixed(2);
           document.getElementById("shopCredits").textContent = result.data.credits;
           msg.textContent = "";
+
+          // 🧩 NEW: Check for low credits
+          if (Number(result.data.credits) < 1) {
+            document.getElementById("creditWarning").style.display = "block";
+            document.getElementById("creditWarning").textContent =
+              "You should have at least 1 SMS credit to sell airtime. Kindly buy SMS credits.";
+            document.getElementById("buyCreditsBtn").style.display = "block";
+            document.getElementById("sellSection").style.display = "none";
+          } else {
+            document.getElementById("creditWarning").style.display = "none";
+            document.getElementById("buyCreditsBtn").style.display = "none";
+            document.getElementById("sellSection").style.display = "block";
+          }
+
         } else {
           msg.textContent = result.message;
           msg.className = "message error";
@@ -193,6 +228,15 @@
           if (creditsElement) {
             const newCredits = Number(creditsElement.textContent) - 1;
             creditsElement.textContent = newCredits >= 0 ? newCredits : 0;
+
+            // Re-check credits after deduction
+            if (newCredits < 1) {
+              document.getElementById("creditWarning").style.display = "block";
+              document.getElementById("creditWarning").textContent =
+                "You should have at least 1 SMS credit to sell airtime. Kindly buy SMS credits.";
+              document.getElementById("buyCreditsBtn").style.display = "block";
+              document.getElementById("sellSection").style.display = "none";
+            }
           }
 
           document.getElementById("customerNumber").value = "";
